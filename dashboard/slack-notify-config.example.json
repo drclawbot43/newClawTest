@@ -1,0 +1,7 @@
+{
+  "enabled": true,
+  "relayUrl": "http://127.0.0.1:8787/notify",
+  "threadTs": "",
+  "defaultActor": "Cypher",
+  "notes": "Set runtime secrets in ../slack-relay-config.json (ignored) or SLACK_RELAY_CONFIG env var."
+}
