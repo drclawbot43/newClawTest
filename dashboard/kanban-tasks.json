@@ -1,0 +1,55 @@
+{
+  "updatedAt": "2026-02-17T03:49:40Z",
+  "columns": ["todo", "in-progress", "blocked", "done"],
+  "tasks": [
+    {
+      "id": "A-001",
+      "title": "Lock weekly objective and success metric",
+      "agent": "architect",
+      "status": "in-progress",
+      "priority": "high"
+    },
+    {
+      "id": "M-001",
+      "title": "Clean gateway security warnings",
+      "agent": "morpheus",
+      "status": "todo",
+      "priority": "high"
+    },
+    {
+      "id": "T-001",
+      "title": "Define ICP for infostructure offer",
+      "agent": "trinity",
+      "status": "in-progress",
+      "priority": "high"
+    },
+    {
+      "id": "O-001",
+      "title": "Set daily deep-work block + reminder cadence",
+      "agent": "oracle",
+      "status": "todo",
+      "priority": "medium"
+    },
+    {
+      "id": "C-001",
+      "title": "Consolidate daily cross-agent SITREP",
+      "agent": "main",
+      "status": "todo",
+      "priority": "medium"
+    },
+    {
+      "id": "C-002",
+      "title": "Expand dashboard for complete visual progress representation (milestones, trends, blockers, velocity)",
+      "agent": "main",
+      "status": "todo",
+      "priority": "high"
+    },
+    {
+      "id": "C-003",
+      "title": "Add real-time progress relay + visible execution trace so Cypher can see live activity and know when the system is working vs stalled",
+      "agent": "main",
+      "status": "done",
+      "priority": "high"
+    }
+  ]
+}
