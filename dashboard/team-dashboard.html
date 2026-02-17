@@ -370,7 +370,7 @@
 
     function startProgressTicker() {
       if (progressTicker) clearInterval(progressTicker);
-      progressTicker = setInterval(() => {
+      progressTicker = setInterval(async () => {
         if (!boardState?.tasks?.length) return;
         const active = boardState.tasks.filter(t => t.status === 'in-progress');
         if (!active.length) {
@@ -382,6 +382,15 @@
         const step = TRACE_STEPS[Math.floor(Math.random() * TRACE_STEPS.length)];
         task.lastTrace = step;
         relay(step, { taskId: task.id, agent: task.agent });
+
+        const elapsedMs = task.initiatedAt ? (Date.now() - new Date(task.initiatedAt).getTime()) : 0;
+        const readyToAutoComplete = elapsedMs > 18000 && step === 'Verifying outputs';
+        if (readyToAutoComplete) {
+          relay('Execution complete — moving card to Done', { taskId: task.id, agent: task.agent });
+          await moveTask(task.id, 'done');
+          return;
+        }
+
         renderActivity();
       }, 6000);
     }
