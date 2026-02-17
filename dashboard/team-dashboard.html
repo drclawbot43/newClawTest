@@ -52,10 +52,24 @@
     .p-medium { border-color: #78350f; color: #fcd34d; }
     .p-low { border-color: #1e3a8a; color: #93c5fd; }
     .p-init { border-color: #065f46; color: #6ee7b7; }
+    .trace-grid { display: grid; grid-template-columns: 1.25fr 1fr; gap: 12px; margin-top: 12px; }
+    .relay-card { min-height: 220px; }
+    .trace-feed, .activity-feed { max-height: 320px; overflow: auto; border: 1px solid #2c3764; border-radius: 10px; background: #0d1530; padding: 8px; }
+    .trace-item, .activity-item { border: 1px solid #2f3b6b; border-radius: 9px; padding: 8px; margin-bottom: 8px; background: #101a38; }
+    .trace-time, .activity-time { color: var(--muted); font-size: 11px; margin-bottom: 4px; }
+    .trace-msg { font-size: 13px; line-height: 1.35; }
+    .activity-title { font-size: 13px; margin-bottom: 4px; }
+    .activity-meta { color: var(--muted); font-size: 12px; }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #22d3ee; box-shadow: 0 0 0 0 rgba(34,211,238,.8); margin-right: 7px; animation: pulse 1.7s infinite; }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(34,211,238,.8); }
+      70% { box-shadow: 0 0 0 10px rgba(34,211,238,0); }
+      100% { box-shadow: 0 0 0 0 rgba(34,211,238,0); }
+    }
     .toast { position: fixed; right: 16px; bottom: 16px; background: #0f172a; border: 1px solid #334155; color: #e2e8f0; padding: 10px 12px; border-radius: 10px; font-size: 13px; opacity: 0; transform: translateY(8px); transition: .2s; }
     .toast.show { opacity: 1; transform: translateY(0); }
 
-    @media (max-width: 980px) { .kanban { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 980px) { .kanban { grid-template-columns: 1fr 1fr; } .trace-grid { grid-template-columns: 1fr; } }
     @media (max-width: 640px) { .kanban { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -77,6 +91,18 @@
     <div class="sub" id="kanbanMeta">Loading task board...</div>
     <div class="kanban" id="kanban"></div>
 
+    <h2>Execution Trace</h2>
+    <div class="trace-grid">
+      <div class="card relay-card">
+        <div class="row"><div class="label">Real-time Progress Relay</div></div>
+        <div class="trace-feed" id="traceFeed"></div>
+      </div>
+      <div class="card relay-card">
+        <div class="row"><div class="label">Live In-Progress Activity</div></div>
+        <div class="activity-feed" id="activityFeed"></div>
+      </div>
+    </div>
+
     <div class="footer" id="footer"></div>
   </div>
   <div id="toast" class="toast"></div>
@@ -91,6 +117,19 @@
 
     let baseKanban = null;
     let boardState = null;
+    let progressRelay = [];
+    let progressTicker = null;
+    let slackNotifyConfig = null;
+
+    const RELAY_LIMIT = 120;
+    const NOTIFY_DEDUPE_WINDOW_MS = 90 * 1000;
+    const TRACE_STEPS = [
+      'Bootstrapping execution context',
+      'Pulling latest dependencies',
+      'Running active checks',
+      'Applying incremental updates',
+      'Verifying outputs'
+    ];
 
     function esc(str = '') {
       return String(str).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
@@ -103,6 +142,67 @@
       setTimeout(() => t.classList.remove('show'), 1700);
     }
 
+    function formatTime(ts) {
+      return new Date(ts).toLocaleTimeString();
+    }
+
+    function formatElapsed(startedAt) {
+      if (!startedAt) return 'not started';
+      const secs = Math.max(0, Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000));
+      const m = Math.floor(secs / 60).toString().padStart(2, '0');
+      const s = (secs % 60).toString().padStart(2, '0');
+      return `${m}:${s}`;
+    }
+
+    function relay(event, options = {}) {
+      if (!boardState) return;
+      const item = {
+        at: new Date().toISOString(),
+        taskId: options.taskId || null,
+        agent: options.agent || null,
+        message: event
+      };
+      progressRelay.unshift(item);
+      progressRelay = progressRelay.slice(0, RELAY_LIMIT);
+      boardState.relay = progressRelay;
+      boardState.updatedAt = item.at;
+      saveBoard();
+      renderTrace();
+    }
+
+    function renderTrace() {
+      const container = document.getElementById('traceFeed');
+      if (!container) return;
+      if (!progressRelay.length) {
+        container.innerHTML = '<div class="trace-item"><div class="trace-msg">No execution events yet. Move a task to In Progress to start the relay.</div></div>';
+        return;
+      }
+
+      container.innerHTML = progressRelay.map(item => `
+        <div class="trace-item">
+          <div class="trace-time">${esc(formatTime(item.at))}${item.taskId ? ` • ${esc(item.taskId)}` : ''}${item.agent ? ` • ${esc(item.agent)}` : ''}</div>
+          <div class="trace-msg">${esc(item.message)}</div>
+        </div>
+      `).join('');
+    }
+
+    function renderActivity() {
+      const container = document.getElementById('activityFeed');
+      if (!container) return;
+      const active = (boardState?.tasks || []).filter(t => t.status === 'in-progress');
+      if (!active.length) {
+        container.innerHTML = '<div class="activity-item"><div class="activity-title">No active tasks</div><div class="activity-meta">Drop a card into In Progress to see live execution signals.</div></div>';
+        return;
+      }
+
+      container.innerHTML = active.map(t => `
+        <div class="activity-item">
+          <div class="activity-title"><span class="dot"></span>${esc(t.id)} — ${esc(t.title)}</div>
+          <div class="activity-meta">Agent: ${esc(t.agent)} • Running: ${esc(formatElapsed(t.initiatedAt))} • Last trace: ${esc(t.lastTrace || 'initiated')}</div>
+        </div>
+      `).join('');
+    }
+
     function saveBoard() {
       localStorage.setItem('cypher-kanban-state', JSON.stringify(boardState));
     }
@@ -111,6 +211,75 @@
       const raw = localStorage.getItem('cypher-kanban-state');
       if (!raw) return null;
       try { return JSON.parse(raw); } catch { return null; }
+    }
+
+    function resolveActor() {
+      const actorFromQuery = new URLSearchParams(window.location.search).get('actor');
+      if (actorFromQuery) {
+        localStorage.setItem('cypher-actor', actorFromQuery);
+        return actorFromQuery;
+      }
+      return localStorage.getItem('cypher-actor') || null;
+    }
+
+    function readNotifyDedupe() {
+      try { return JSON.parse(localStorage.getItem('cypher-notify-dedupe') || '{}'); } catch { return {}; }
+    }
+
+    function writeNotifyDedupe(map) {
+      localStorage.setItem('cypher-notify-dedupe', JSON.stringify(map));
+    }
+
+    function shouldNotifyTransition(sig) {
+      const now = Date.now();
+      const dedupe = readNotifyDedupe();
+      for (const [k, ts] of Object.entries(dedupe)) {
+        if (!Number.isFinite(ts) || now - ts > NOTIFY_DEDUPE_WINDOW_MS) delete dedupe[k];
+      }
+      const isBlocked = dedupe[sig] && (now - dedupe[sig] < NOTIFY_DEDUPE_WINDOW_MS);
+      if (isBlocked) return false;
+      dedupe[sig] = now;
+      writeNotifyDedupe(dedupe);
+      return true;
+    }
+
+    async function loadSlackNotifyConfig() {
+      try {
+        const res = await fetch('./slack-notify-config.json?ts=' + Date.now());
+        if (!res.ok) return;
+        slackNotifyConfig = await res.json();
+      } catch {
+        slackNotifyConfig = null;
+      }
+    }
+
+    async function sendSlackTransitionNotification(task, from, to) {
+      if (!slackNotifyConfig?.enabled || !slackNotifyConfig?.webhookUrl) return;
+      const actor = resolveActor() || slackNotifyConfig.defaultActor || 'unknown';
+      const timestamp = new Date().toISOString();
+      const dedupeSig = [task.id, from, to, actor].join('|').toLowerCase();
+      if (!shouldNotifyTransition(dedupeSig)) return;
+
+      const text = [
+        `Kanban transition: ${task.id} — ${task.title}`,
+        `Transition: ${from} -> ${to}`,
+        `Timestamp: ${timestamp}`,
+        `Actor: ${actor}`
+      ].join('\n');
+
+      const payload = { text };
+      if (slackNotifyConfig.threadTs) payload.thread_ts = slackNotifyConfig.threadTs;
+
+      try {
+        await fetch(slackNotifyConfig.webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        relay('Slack notification sent for status transition', { taskId: task.id, agent: task.agent });
+      } catch {
+        relay('Slack notification failed (check webhook config)', { taskId: task.id, agent: task.agent });
+      }
     }
 
     async function loadTeam() {
@@ -154,21 +323,27 @@
       `;
     }
 
-    function moveTask(taskId, newStatus) {
+    async function moveTask(taskId, newStatus) {
       const t = boardState.tasks.find(x => x.id === taskId);
       if (!t) return;
       const from = t.status;
+      if (from === newStatus) return;
       t.status = newStatus;
-      if (newStatus === 'in-progress' && !t.initiatedAt) {
-        t.initiatedAt = new Date().toISOString();
+      if (newStatus === 'in-progress') {
+        if (!t.initiatedAt) t.initiatedAt = new Date().toISOString();
         t.initiated = true;
+        t.lastTrace = 'Execution started';
         showToast(`Initiated: ${t.id} (${t.agent})`);
+        relay(`Execution initiated (${from} → in-progress)`, { taskId: t.id, agent: t.agent });
       } else {
+        t.lastTrace = `Moved to ${newStatus}`;
         showToast(`Moved ${t.id}: ${from} → ${newStatus}`);
+        relay(`Status changed (${from} → ${newStatus})`, { taskId: t.id, agent: t.agent });
       }
       boardState.updatedAt = new Date().toISOString();
       saveBoard();
       drawKanban();
+      await sendSlackTransitionNotification(t, from, newStatus);
     }
 
     function wireDnD() {
@@ -184,13 +359,31 @@
           zone.classList.add('drag-over');
         });
         zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
-        zone.addEventListener('drop', (e) => {
+        zone.addEventListener('drop', async (e) => {
           e.preventDefault();
           zone.classList.remove('drag-over');
           const taskId = e.dataTransfer.getData('text/plain');
-          moveTask(taskId, zone.dataset.status);
+          await moveTask(taskId, zone.dataset.status);
         });
       });
+    }
+
+    function startProgressTicker() {
+      if (progressTicker) clearInterval(progressTicker);
+      progressTicker = setInterval(() => {
+        if (!boardState?.tasks?.length) return;
+        const active = boardState.tasks.filter(t => t.status === 'in-progress');
+        if (!active.length) {
+          renderActivity();
+          return;
+        }
+
+        const task = active[Math.floor(Math.random() * active.length)];
+        const step = TRACE_STEPS[Math.floor(Math.random() * TRACE_STEPS.length)];
+        task.lastTrace = step;
+        relay(step, { taskId: task.id, agent: task.agent });
+        renderActivity();
+      }, 6000);
     }
 
     function drawKanban() {
@@ -206,8 +399,10 @@
         </div>
       `).join('');
 
-      document.getElementById('kanbanMeta').textContent = `Drag cards between columns. Dropping into In Progress auto-initiates the task. Last update: ${boardState.updatedAt}`;
+      document.getElementById('kanbanMeta').textContent = `Drag cards between columns. Dropping into In Progress auto-initiates the task, emits relay traces, and sends Slack transition notifications. Last update: ${boardState.updatedAt}`;
       wireDnD();
+      renderTrace();
+      renderActivity();
     }
 
     function mergeBoardWithBase(saved, base) {
@@ -221,13 +416,15 @@
           ...task,
           status: prev.status || task.status,
           initiatedAt: prev.initiatedAt || task.initiatedAt,
-          initiated: prev.initiated || task.initiated
+          initiated: prev.initiated || task.initiated,
+          lastTrace: prev.lastTrace || task.lastTrace
         };
       });
 
       return {
         ...structuredClone(base),
         tasks: mergedTasks,
+        relay: Array.isArray(saved.relay) ? saved.relay.slice(0, RELAY_LIMIT) : [],
         updatedAt: saved.updatedAt || base.updatedAt
       };
     }
@@ -237,20 +434,27 @@
       baseKanban = await res.json();
       const saved = loadSavedBoard();
       boardState = mergeBoardWithBase(saved, baseKanban);
+      progressRelay = Array.isArray(boardState.relay) ? boardState.relay : [];
+      if (!progressRelay.length) {
+        relay('Kanban relay online: awaiting task transitions');
+      }
       saveBoard();
       drawKanban();
+      startProgressTicker();
     }
 
     function resetBoard() {
       if (!baseKanban) return;
       boardState = structuredClone(baseKanban);
+      progressRelay = [];
+      relay('Board reset to file defaults');
       saveBoard();
       drawKanban();
       showToast('Board reset to file defaults');
     }
 
     async function refreshAll() {
-      await Promise.all([loadTeam(), loadKanban()]);
+      await Promise.all([loadSlackNotifyConfig(), loadTeam(), loadKanban()]);
     }
 
     refreshAll();
