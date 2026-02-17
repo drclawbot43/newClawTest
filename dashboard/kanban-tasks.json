@@ -1,55 +1,104 @@
 {
-  "updatedAt": "2026-02-17T03:49:40Z",
+  "updatedAt": "2026-02-17T03:55:30Z",
   "columns": ["todo", "in-progress", "blocked", "done"],
   "tasks": [
     {
       "id": "A-001",
+      "shortTitle": "Lock weekly objective",
       "title": "Lock weekly objective and success metric",
       "agent": "architect",
       "status": "in-progress",
-      "priority": "high"
+      "priority": "high",
+      "actionItems": [
+        "Define top objective in one sentence",
+        "Set measurable success metric",
+        "Assign owner and target date"
+      ],
+      "comments": []
     },
     {
       "id": "M-001",
+      "shortTitle": "Fix security warnings",
       "title": "Clean gateway security warnings",
       "agent": "morpheus",
       "status": "todo",
-      "priority": "high"
+      "priority": "high",
+      "actionItems": [
+        "Audit current security warnings",
+        "Patch trusted proxies and denyCommands config",
+        "Re-run security audit"
+      ],
+      "comments": []
     },
     {
       "id": "T-001",
+      "shortTitle": "Define ICP",
       "title": "Define ICP for infostructure offer",
       "agent": "trinity",
       "status": "in-progress",
-      "priority": "high"
+      "priority": "high",
+      "actionItems": [
+        "Pick primary target segment",
+        "Map core pain points",
+        "Draft message-market fit hypothesis"
+      ],
+      "comments": []
     },
     {
       "id": "O-001",
-      "title": "Set daily deep-work block + reminder cadence",
+      "shortTitle": "Set deep-work cadence",
+      "title": "Set daily deep-work block and reminder cadence",
       "agent": "oracle",
       "status": "todo",
-      "priority": "medium"
+      "priority": "medium",
+      "actionItems": [
+        "Choose daily focus window",
+        "Set reminders",
+        "Define end-of-day review"
+      ],
+      "comments": []
     },
     {
       "id": "C-001",
+      "shortTitle": "Daily SITREP",
       "title": "Consolidate daily cross-agent SITREP",
       "agent": "main",
       "status": "todo",
-      "priority": "medium"
+      "priority": "medium",
+      "actionItems": [
+        "Collect updates from all agents",
+        "Summarize risks and blockers",
+        "Send concise daily report"
+      ],
+      "comments": []
     },
     {
       "id": "C-002",
-      "title": "Expand dashboard for complete visual progress representation (milestones, trends, blockers, velocity)",
+      "shortTitle": "Expand progress visuals",
+      "title": "Expand dashboard for complete visual progress representation",
       "agent": "main",
       "status": "todo",
-      "priority": "high"
+      "priority": "high",
+      "actionItems": [
+        "Add milestones and trend views",
+        "Add blocker heatmap",
+        "Add throughput/velocity panel"
+      ],
+      "comments": []
     },
     {
       "id": "C-003",
-      "title": "Add real-time progress relay + visible execution trace so Cypher can see live activity and know when the system is working vs stalled",
+      "shortTitle": "Add live progress relay",
+      "title": "Add real-time progress relay and execution trace to show active work versus stalls",
       "agent": "main",
-      "status": "done",
-      "priority": "high"
+      "status": "todo",
+      "priority": "high",
+      "actionItems": [
+        "Show per-agent heartbeat",
+        "Show last action timestamp",
+        "Alert on inactivity timeout"
+      ],
+      "comments": []
     }
   ]
 }
