@@ -6,18 +6,20 @@
   <title>Cypher Matrix Team Dashboard</title>
   <style>
     :root {
-      --bg: #0b1020;
-      --card: #141b34;
-      --muted: #94a3b8;
-      --text: #e2e8f0;
-      --ok: #22c55e;
-      --border: #2a3358;
+      --bg: #050b07;
+      --card: #0c1710;
+      --muted: #9cc7a9;
+      --text: #e8fff0;
+      --ok: #49ff8f;
+      --border: #1f3a2c;
+      --accent: #39ff88;
+      --panel: #0a140e;
     }
     * { box-sizing: border-box; }
     body {
       margin: 0;
       font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: linear-gradient(180deg, #070b16 0%, #0b1020 100%);
+      background: radial-gradient(circle at top, #0a1b11 0%, #050b07 45%, #030604 100%);
       color: var(--text);
     }
     .wrap { max-width: 1200px; margin: 0 auto; padding: 24px; }
@@ -25,7 +27,7 @@
     h2 { margin: 22px 0 10px; font-size: 20px; }
     .sub { color: var(--muted); margin-bottom: 20px; }
     .top { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 18px; }
-    .kpi, .card, .kanban-col { background: rgba(20,27,52,0.95); border: 1px solid var(--border); border-radius: 14px; padding: 14px; }
+    .kpi, .card, .kanban-col { background: rgba(10,20,14,0.96); border: 1px solid var(--border); border-radius: 14px; padding: 14px; box-shadow: 0 0 0 1px rgba(57,255,136,.05) inset; }
     .kpi .label, .row .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
     .kpi .value { font-size: 20px; margin-top: 6px; font-weight: 700; }
     .ok { color: var(--ok); }
@@ -37,19 +39,22 @@
     ul { margin: 8px 0 0 18px; padding: 0; }
     li { margin: 4px 0; }
     .footer { margin-top: 16px; color: var(--muted); font-size: 12px; }
-    .btn { background: #0e7490; color: white; border: 0; border-radius: 10px; padding: 8px 12px; cursor: pointer; margin-left: 10px; }
+    .btn { background: #135f33; color: #ecfff2; border: 1px solid #2ca45c; border-radius: 10px; padding: 8px 12px; cursor: pointer; margin-left: 10px; }
+    .task-form { margin: 8px 0 14px; display: grid; grid-template-columns: 1.4fr 1fr 0.8fr 1.4fr auto; gap: 8px; }
+    .task-form input, .task-form select { background: #0b1811; color: var(--text); border: 1px solid #295238; border-radius: 8px; padding: 8px; font-size: 13px; }
+    .task-form .btn { margin-left: 0; }
 
     .kanban { display: grid; grid-template-columns: repeat(4, minmax(220px, 1fr)); gap: 12px; align-items: start; }
     .kanban-col h3 { margin: 0 0 10px; font-size: 14px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
-    .dropzone { min-height: 90px; border: 1px dashed #33406e; border-radius: 10px; padding: 8px; transition: .12s ease; }
-    .dropzone.drag-over { border-color: #22d3ee; background: rgba(34,211,238,.08); }
-    .task { border: 1px solid #33406e; border-radius: 10px; padding: 10px; margin-bottom: 8px; background: #101933; cursor: grab; }
+    .dropzone { min-height: 90px; border: 1px dashed #2b5b3e; border-radius: 10px; padding: 8px; transition: .12s ease; }
+    .dropzone.drag-over { border-color: #39ff88; background: rgba(57,255,136,.12); }
+    .task { border: 1px solid #2b5b3e; border-radius: 10px; padding: 10px; margin-bottom: 8px; background: #0d1b12; cursor: grab; }
     .task:active { cursor: grabbing; }
     .task-title { font-size: 14px; margin: 0 0 6px; font-weight: 600; }
     .task-meta { font-size: 11px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; }
     .task details { margin-top: 8px; border-top: 1px solid #27345f; padding-top: 8px; }
-    .task summary { cursor: pointer; color: #93c5fd; font-size: 12px; }
-    .task-details { margin-top: 6px; font-size: 12px; color: #cbd5e1; }
+    .task summary { cursor: pointer; color: #8dffb8; font-size: 12px; }
+    .task-details { margin-top: 6px; font-size: 12px; color: #d9fbe6; }
     .task-details .section-title { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; margin-top: 6px; }
     .task-details ul { margin: 4px 0 0 16px; }
     .pill { display: inline-block; border: 1px solid #475569; border-radius: 999px; padding: 1px 7px; font-size: 11px; }
@@ -59,21 +64,21 @@
     .p-init { border-color: #065f46; color: #6ee7b7; }
     .trace-grid { display: grid; grid-template-columns: 1.25fr 1fr; gap: 12px; margin-top: 12px; }
     .relay-card { min-height: 220px; }
-    .trace-feed, .activity-feed { max-height: 320px; overflow: auto; border: 1px solid #2c3764; border-radius: 10px; background: #0d1530; padding: 8px; }
-    .trace-item, .activity-item { border: 1px solid #2f3b6b; border-radius: 9px; padding: 8px; margin-bottom: 8px; background: #101a38; }
+    .trace-feed, .activity-feed { max-height: 320px; overflow: auto; border: 1px solid #284f36; border-radius: 10px; background: #0b1811; padding: 8px; }
+    .trace-item, .activity-item { border: 1px solid #2a5238; border-radius: 9px; padding: 8px; margin-bottom: 8px; background: #0d1d14; }
     .trace-item summary { cursor: pointer; list-style: none; }
     .trace-item summary::-webkit-details-marker { display: none; }
     .trace-time, .activity-time { color: var(--muted); font-size: 11px; margin-bottom: 4px; }
     .trace-msg { font-size: 13px; line-height: 1.35; }
     .activity-title { font-size: 13px; margin-bottom: 4px; }
     .activity-meta { color: var(--muted); font-size: 12px; }
-    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #22d3ee; box-shadow: 0 0 0 0 rgba(34,211,238,.8); margin-right: 7px; animation: pulse 1.7s infinite; }
+    .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #39ff88; box-shadow: 0 0 0 0 rgba(57,255,136,.75); margin-right: 7px; animation: pulse 1.7s infinite; }
     @keyframes pulse {
-      0% { box-shadow: 0 0 0 0 rgba(34,211,238,.8); }
-      70% { box-shadow: 0 0 0 10px rgba(34,211,238,0); }
-      100% { box-shadow: 0 0 0 0 rgba(34,211,238,0); }
+      0% { box-shadow: 0 0 0 0 rgba(57,255,136,.75); }
+      70% { box-shadow: 0 0 0 10px rgba(57,255,136,0); }
+      100% { box-shadow: 0 0 0 0 rgba(57,255,136,0); }
     }
-    .toast { position: fixed; right: 16px; bottom: 16px; background: #0f172a; border: 1px solid #334155; color: #e2e8f0; padding: 10px 12px; border-radius: 10px; font-size: 13px; opacity: 0; transform: translateY(8px); transition: .2s; z-index: 20; }
+    .toast { position: fixed; right: 16px; bottom: 16px; background: #102216; border: 1px solid #2f7a4d; color: #ecfff2; padding: 10px 12px; border-radius: 10px; font-size: 13px; opacity: 0; transform: translateY(8px); transition: .2s; z-index: 20; }
     .toast.show { opacity: 1; transform: translateY(0); }
     .activity { margin-top: 14px; background: rgba(12,18,37,.95); border: 1px solid var(--border); border-radius: 12px; padding: 10px; max-height: 180px; overflow: auto; }
     .activity h3 { margin: 0 0 8px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
@@ -100,6 +105,23 @@
 
     <h2>Kanban Board</h2>
     <div class="sub" id="kanbanMeta">Loading task board...</div>
+    <div class="task-form">
+      <input id="newTaskTitle" placeholder="Task title (concise)" />
+      <select id="newTaskAgent">
+        <option value="main">main</option>
+        <option value="architect">architect</option>
+        <option value="morpheus">morpheus</option>
+        <option value="trinity">trinity</option>
+        <option value="oracle">oracle</option>
+      </select>
+      <select id="newTaskPriority">
+        <option value="high">high</option>
+        <option value="medium" selected>medium</option>
+        <option value="low">low</option>
+      </select>
+      <input id="newTaskActions" placeholder="Action items (comma separated)" />
+      <button class="btn" onclick="createTaskFromForm()">Add Task</button>
+    </div>
     <div class="kanban" id="kanban"></div>
 
     <h2>Execution Trace</h2>
@@ -151,6 +173,61 @@
       t.textContent = msg;
       t.classList.add('show');
       setTimeout(() => t.classList.remove('show'), 1700);
+    }
+
+    function nextTaskId(agent) {
+      const prefixMap = { main: 'C', architect: 'A', morpheus: 'M', trinity: 'T', oracle: 'O' };
+      const prefix = prefixMap[agent] || 'X';
+      const nums = (boardState?.tasks || [])
+        .map(t => String(t.id || ''))
+        .filter(id => id.startsWith(prefix + '-'))
+        .map(id => Number(id.split('-')[1]))
+        .filter(n => Number.isFinite(n));
+      const next = (nums.length ? Math.max(...nums) : 0) + 1;
+      return `${prefix}-${String(next).padStart(3, '0')}`;
+    }
+
+    async function createTaskFromForm() {
+      if (!boardState) return;
+      const titleEl = document.getElementById('newTaskTitle');
+      const agentEl = document.getElementById('newTaskAgent');
+      const priorityEl = document.getElementById('newTaskPriority');
+      const actionsEl = document.getElementById('newTaskActions');
+
+      const title = (titleEl?.value || '').trim();
+      if (!title) {
+        showToast('Add a task title first');
+        return;
+      }
+
+      const agent = agentEl?.value || 'main';
+      const priority = priorityEl?.value || 'medium';
+      const actionItems = (actionsEl?.value || '')
+        .split(',')
+        .map(x => x.trim())
+        .filter(Boolean);
+
+      const task = {
+        id: nextTaskId(agent),
+        shortTitle: title,
+        title,
+        agent,
+        status: 'todo',
+        priority,
+        actionItems,
+        comments: []
+      };
+
+      boardState.tasks.unshift(task);
+      boardState.updatedAt = new Date().toISOString();
+      saveBoard();
+      drawKanban();
+      relay('New task created in To Do', { taskId: task.id, agent: task.agent });
+      await sendTaskEventToBackend('task_created', task);
+      showToast(`Task added: ${task.id}`);
+
+      titleEl.value = '';
+      actionsEl.value = '';
     }
 
     function formatTime(ts) {
@@ -268,7 +345,7 @@
       localStorage.setItem('cypher-notify-dedupe', JSON.stringify(map));
     }
 
-    function shouldNotifyTransition(sig) {
+    function shouldNotifyEvent(sig) {
       const now = Date.now();
       const dedupe = readNotifyDedupe();
       for (const [k, ts] of Object.entries(dedupe)) {
@@ -291,28 +368,23 @@
       }
     }
 
-    function sendBrowserNotification(task, from, to) {
-      if (!('Notification' in window)) return;
-      const body = `${task.id}: ${from} → ${to}`;
-      if (Notification.permission === 'granted') {
-        new Notification('Cypher Matrix Kanban', { body });
-      }
-    }
-
-    async function sendSlackTransitionNotification(task, from, to) {
+    async function sendTaskEventToBackend(eventType, task, details = {}) {
       if (!slackNotifyConfig?.enabled) return;
       const relayUrl = slackNotifyConfig.relayUrl || 'http://127.0.0.1:8787/notify';
       const actor = resolveActor() || slackNotifyConfig.defaultActor || 'unknown';
       const timestamp = new Date().toISOString();
-      const dedupeSig = [task.id, from, to, actor].join('|').toLowerCase();
-      if (!shouldNotifyTransition(dedupeSig)) return;
+      const dedupeSig = [eventType, task.id, details.from || '', details.to || '', actor].join('|').toLowerCase();
+      if (!shouldNotifyEvent(dedupeSig)) return;
 
-      const text = [
-        `Kanban transition: ${task.id} — ${task.title}`,
-        `Transition: ${from} -> ${to}`,
-        `Timestamp: ${timestamp}`,
-        `Actor: ${actor}`
-      ].join('\n');
+      const lines = [
+        `Kanban event: ${eventType}`,
+        `Task: ${task.id} — ${task.title}`,
+        `Agent: ${task.agent}`
+      ];
+      if (details.from || details.to) lines.push(`Transition: ${details.from || 'n/a'} -> ${details.to || 'n/a'}`);
+      lines.push(`Timestamp: ${timestamp}`);
+      lines.push(`Actor: ${actor}`);
+      const text = lines.join('\n');
 
       try {
         const res = await fetch(relayUrl, {
@@ -320,13 +392,14 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             text,
+            eventType,
             threadTs: slackNotifyConfig.threadTs || '',
             task: {
               id: task.id,
               title: task.title,
               agent: task.agent
             },
-            transition: { from, to },
+            transition: details.from || details.to ? { from: details.from || '', to: details.to || '' } : undefined,
             actor,
             timestamp
           })
@@ -335,7 +408,7 @@
         if (!res.ok) {
           relay(`Slack relay failed: HTTP ${res.status}`, { taskId: task.id, agent: task.agent });
         } else {
-          relay('Slack relay accepted transition notification', { taskId: task.id, agent: task.agent });
+          relay(`Slack relay accepted event: ${eventType}`, { taskId: task.id, agent: task.agent });
         }
       } catch (err) {
         relay(`Slack relay failed: ${err?.message || 'network'}`, { taskId: task.id, agent: task.agent });
@@ -421,8 +494,7 @@
       boardState.updatedAt = new Date().toISOString();
       saveBoard();
       drawKanban();
-      sendBrowserNotification(t, from, newStatus);
-      await sendSlackTransitionNotification(t, from, newStatus);
+      await sendTaskEventToBackend('task_transition', t, { from, to: newStatus });
     }
 
     function wireDnD() {
@@ -487,7 +559,7 @@
         </div>
       `).join('');
 
-      document.getElementById('kanbanMeta').textContent = `Drag cards between columns. Dropping into In Progress auto-initiates the task, emits relay traces, and sends Slack transition notifications. Last update: ${boardState.updatedAt}`;
+      document.getElementById('kanbanMeta').textContent = `Drag cards between columns. Dropping into In Progress auto-initiates the task, emits relay traces, and pushes task events to the local backend relay. Last update: ${boardState.updatedAt}`;
       wireDnD();
       renderTrace();
       renderActivity();
@@ -548,15 +620,7 @@
       showToast('Board reset to file defaults');
     }
 
-    async function ensureBrowserNotifications() {
-      if (!('Notification' in window)) return;
-      if (Notification.permission === 'default') {
-        try { await Notification.requestPermission(); } catch {}
-      }
-    }
-
     async function refreshAll() {
-      await ensureBrowserNotifications();
       await Promise.all([loadSlackNotifyConfig(), loadTeam(), loadKanban()]);
     }
 
