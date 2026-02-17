@@ -1,0 +1,7 @@
+{
+  "enabled": true,
+  "relayUrl": "__REQUIRED__",
+  "threadTs": "__REQUIRED__",
+  "defaultActor": "__REQUIRED__",
+  "notes": "__REQUIRED__"
+}

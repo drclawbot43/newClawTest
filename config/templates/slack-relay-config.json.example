@@ -1,0 +1,5 @@
+{
+  "enabled": true,
+  "webhookUrl": "__REQUIRED__",
+  "threadTs": "__REQUIRED__"
+}
