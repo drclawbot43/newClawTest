@@ -45,8 +45,13 @@
     .dropzone.drag-over { border-color: #22d3ee; background: rgba(34,211,238,.08); }
     .task { border: 1px solid #33406e; border-radius: 10px; padding: 10px; margin-bottom: 8px; background: #101933; cursor: grab; }
     .task:active { cursor: grabbing; }
-    .task-title { font-size: 14px; margin: 0 0 6px; }
+    .task-title { font-size: 14px; margin: 0 0 6px; font-weight: 600; }
     .task-meta { font-size: 11px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; }
+    .task details { margin-top: 8px; border-top: 1px solid #27345f; padding-top: 8px; }
+    .task summary { cursor: pointer; color: #93c5fd; font-size: 12px; }
+    .task-details { margin-top: 6px; font-size: 12px; color: #cbd5e1; }
+    .task-details .section-title { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .06em; margin-top: 6px; }
+    .task-details ul { margin: 4px 0 0 16px; }
     .pill { display: inline-block; border: 1px solid #475569; border-radius: 999px; padding: 1px 7px; font-size: 11px; }
     .p-high { border-color: #7f1d1d; color: #fca5a5; }
     .p-medium { border-color: #78350f; color: #fcd34d; }
@@ -56,6 +61,8 @@
     .relay-card { min-height: 220px; }
     .trace-feed, .activity-feed { max-height: 320px; overflow: auto; border: 1px solid #2c3764; border-radius: 10px; background: #0d1530; padding: 8px; }
     .trace-item, .activity-item { border: 1px solid #2f3b6b; border-radius: 9px; padding: 8px; margin-bottom: 8px; background: #101a38; }
+    .trace-item summary { cursor: pointer; list-style: none; }
+    .trace-item summary::-webkit-details-marker { display: none; }
     .trace-time, .activity-time { color: var(--muted); font-size: 11px; margin-bottom: 4px; }
     .trace-msg { font-size: 13px; line-height: 1.35; }
     .activity-title { font-size: 13px; margin-bottom: 4px; }
@@ -66,8 +73,12 @@
       70% { box-shadow: 0 0 0 10px rgba(34,211,238,0); }
       100% { box-shadow: 0 0 0 0 rgba(34,211,238,0); }
     }
-    .toast { position: fixed; right: 16px; bottom: 16px; background: #0f172a; border: 1px solid #334155; color: #e2e8f0; padding: 10px 12px; border-radius: 10px; font-size: 13px; opacity: 0; transform: translateY(8px); transition: .2s; }
+    .toast { position: fixed; right: 16px; bottom: 16px; background: #0f172a; border: 1px solid #334155; color: #e2e8f0; padding: 10px 12px; border-radius: 10px; font-size: 13px; opacity: 0; transform: translateY(8px); transition: .2s; z-index: 20; }
     .toast.show { opacity: 1; transform: translateY(0); }
+    .activity { margin-top: 14px; background: rgba(12,18,37,.95); border: 1px solid var(--border); border-radius: 12px; padding: 10px; max-height: 180px; overflow: auto; }
+    .activity h3 { margin: 0 0 8px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+    .event { font-size: 12px; border-bottom: 1px solid #233052; padding: 6px 0; color: #cbd5e1; }
+    .event:last-child { border-bottom: 0; }
 
     @media (max-width: 980px) { .kanban { grid-template-columns: 1fr 1fr; } .trace-grid { grid-template-columns: 1fr; } }
     @media (max-width: 640px) { .kanban { grid-template-columns: 1fr; } }
@@ -170,6 +181,22 @@
       renderTrace();
     }
 
+    function classifyTrace(item) {
+      const msg = String(item.message || '').toLowerCase();
+      if (/fail|error|exception|timeout|stalled|blocked/.test(msg)) return 'issue';
+      if (/complete|done|success/.test(msg)) return 'success';
+      return 'info';
+    }
+
+    function traceHints(item) {
+      const msg = String(item.message || '').toLowerCase();
+      if (/timeout/.test(msg)) return ['Check service reachability', 'Retry the operation', 'Inspect gateway/channel logs'];
+      if (/cors|network/.test(msg)) return ['Verify webhook endpoint allows request origin', 'Confirm URL/token are valid', 'Retry after connectivity check'];
+      if (/fail|error|exception/.test(msg)) return ['Open logs for this agent/task', 'Capture exact error text', 'Escalate if repeated 2+ times'];
+      if (/blocked|stalled/.test(msg)) return ['Identify dependency/owner', 'Set unblock action + ETA', 'Escalate to Architect if unresolved'];
+      return ['No immediate issue detected', 'Continue monitoring relay updates'];
+    }
+
     function renderTrace() {
       const container = document.getElementById('traceFeed');
       if (!container) return;
@@ -178,12 +205,23 @@
         return;
       }
 
-      container.innerHTML = progressRelay.map(item => `
-        <div class="trace-item">
-          <div class="trace-time">${esc(formatTime(item.at))}${item.taskId ? ` • ${esc(item.taskId)}` : ''}${item.agent ? ` • ${esc(item.agent)}` : ''}</div>
-          <div class="trace-msg">${esc(item.message)}</div>
-        </div>
-      `).join('');
+      container.innerHTML = progressRelay.map((item, idx) => {
+        const cls = classifyTrace(item);
+        const badge = cls === 'issue' ? '⚠ issue' : cls === 'success' ? '✓ success' : '• info';
+        const hints = traceHints(item);
+        return `
+        <details class="trace-item" ${idx === 0 ? 'open' : ''}>
+          <summary>
+            <div class="trace-time">${esc(formatTime(item.at))}${item.taskId ? ` • ${esc(item.taskId)}` : ''}${item.agent ? ` • ${esc(item.agent)}` : ''}</div>
+            <div class="trace-msg">${esc(item.message)} <span class="pill">${badge}</span></div>
+          </summary>
+          <div class="task-details">
+            <div class="section-title">Diagnostics</div>
+            <ul>${hints.map(h => `<li>${esc(h)}</li>`).join('')}</ul>
+          </div>
+        </details>
+      `;
+      }).join('');
     }
 
     function renderActivity() {
@@ -253,8 +291,17 @@
       }
     }
 
+    function sendBrowserNotification(task, from, to) {
+      if (!('Notification' in window)) return;
+      const body = `${task.id}: ${from} → ${to}`;
+      if (Notification.permission === 'granted') {
+        new Notification('Cypher Matrix Kanban', { body });
+      }
+    }
+
     async function sendSlackTransitionNotification(task, from, to) {
-      if (!slackNotifyConfig?.enabled || !slackNotifyConfig?.webhookUrl) return;
+      if (!slackNotifyConfig?.enabled) return;
+      const relayUrl = slackNotifyConfig.relayUrl || 'http://127.0.0.1:8787/notify';
       const actor = resolveActor() || slackNotifyConfig.defaultActor || 'unknown';
       const timestamp = new Date().toISOString();
       const dedupeSig = [task.id, from, to, actor].join('|').toLowerCase();
@@ -267,18 +314,31 @@
         `Actor: ${actor}`
       ].join('\n');
 
-      const payload = { text };
-      if (slackNotifyConfig.threadTs) payload.thread_ts = slackNotifyConfig.threadTs;
-
       try {
-        await fetch(slackNotifyConfig.webhookUrl, {
+        const res = await fetch(relayUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({
+            text,
+            threadTs: slackNotifyConfig.threadTs || '',
+            task: {
+              id: task.id,
+              title: task.title,
+              agent: task.agent
+            },
+            transition: { from, to },
+            actor,
+            timestamp
+          })
         });
-        relay('Slack notification sent for status transition', { taskId: task.id, agent: task.agent });
-      } catch {
-        relay('Slack notification failed (check webhook config)', { taskId: task.id, agent: task.agent });
+
+        if (!res.ok) {
+          relay(`Slack relay failed: HTTP ${res.status}`, { taskId: task.id, agent: task.agent });
+        } else {
+          relay('Slack relay accepted transition notification', { taskId: task.id, agent: task.agent });
+        }
+      } catch (err) {
+        relay(`Slack relay failed: ${err?.message || 'network'}`, { taskId: task.id, agent: task.agent });
       }
     }
 
@@ -310,15 +370,27 @@
       const p = (task.priority || 'low').toLowerCase();
       const priorityClass = p === 'high' ? 'p-high' : p === 'medium' ? 'p-medium' : 'p-low';
       const init = task.initiatedAt ? `<span class="pill p-init">started ${new Date(task.initiatedAt).toLocaleTimeString()}</span>` : '';
+      const conciseTitle = task.shortTitle || task.title;
+      const actionItems = (task.actionItems || []).map(x => `<li>${esc(x)}</li>`).join('') || '<li>No action items yet</li>';
+      const comments = (task.comments || []).map(c => `<li>${esc(c)}</li>`).join('') || '<li>No completion comments yet</li>';
       return `
         <div class="task" draggable="true" data-id="${esc(task.id)}">
-          <div class="task-title">${esc(task.title)}</div>
+          <div class="task-title">${esc(conciseTitle)}</div>
           <div class="task-meta">
             <span class="pill">${esc(task.id)}</span>
             <span class="pill">${esc(task.agent)}</span>
             <span class="pill ${priorityClass}">${esc(p)}</span>
             ${init}
           </div>
+          <details>
+            <summary>View action items & comments</summary>
+            <div class="task-details">
+              <div class="section-title">Action Items</div>
+              <ul>${actionItems}</ul>
+              <div class="section-title">Comments</div>
+              <ul>${comments}</ul>
+            </div>
+          </details>
         </div>
       `;
     }
@@ -340,9 +412,16 @@
         showToast(`Moved ${t.id}: ${from} → ${newStatus}`);
         relay(`Status changed (${from} → ${newStatus})`, { taskId: t.id, agent: t.agent });
       }
+
+      if (newStatus === 'done') {
+        t.completedAt = new Date().toISOString();
+        if (!Array.isArray(t.comments)) t.comments = [];
+        t.comments.unshift(`ClawBot: completed and moved to Done at ${new Date(t.completedAt).toLocaleString()}.`);
+      }
       boardState.updatedAt = new Date().toISOString();
       saveBoard();
       drawKanban();
+      sendBrowserNotification(t, from, newStatus);
       await sendSlackTransitionNotification(t, from, newStatus);
     }
 
@@ -469,7 +548,15 @@
       showToast('Board reset to file defaults');
     }
 
+    async function ensureBrowserNotifications() {
+      if (!('Notification' in window)) return;
+      if (Notification.permission === 'default') {
+        try { await Notification.requestPermission(); } catch {}
+      }
+    }
+
     async function refreshAll() {
+      await ensureBrowserNotifications();
       await Promise.all([loadSlackNotifyConfig(), loadTeam(), loadKanban()]);
     }
 
