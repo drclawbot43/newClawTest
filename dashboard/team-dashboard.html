@@ -417,13 +417,20 @@
     function mergeBoardWithBase(saved, base) {
       if (!saved || !Array.isArray(saved.tasks)) return structuredClone(base);
 
+      const baseUpdatedAtMs = new Date(base?.updatedAt || 0).getTime();
+      const savedUpdatedAtMs = new Date(saved?.updatedAt || 0).getTime();
+      const baseIsNewer = Number.isFinite(baseUpdatedAtMs) && baseUpdatedAtMs > savedUpdatedAtMs;
+
       const savedById = new Map(saved.tasks.map(t => [t.id, t]));
       const mergedTasks = (base.tasks || []).map(task => {
         const prev = savedById.get(task.id);
         if (!prev) return structuredClone(task);
+
+        const preferBaseDone = baseIsNewer && task.status === 'done' && prev.status !== 'done';
+
         return {
           ...task,
-          status: prev.status || task.status,
+          status: preferBaseDone ? task.status : (prev.status || task.status),
           initiatedAt: prev.initiatedAt || task.initiatedAt,
           initiated: prev.initiated || task.initiated,
           lastTrace: prev.lastTrace || task.lastTrace
@@ -434,7 +441,7 @@
         ...structuredClone(base),
         tasks: mergedTasks,
         relay: Array.isArray(saved.relay) ? saved.relay.slice(0, RELAY_LIMIT) : [],
-        updatedAt: saved.updatedAt || base.updatedAt
+        updatedAt: baseIsNewer ? base.updatedAt : (saved.updatedAt || base.updatedAt)
       };
     }
 
