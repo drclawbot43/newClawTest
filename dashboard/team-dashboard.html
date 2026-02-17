@@ -10,9 +10,7 @@
       --card: #141b34;
       --muted: #94a3b8;
       --text: #e2e8f0;
-      --accent: #22d3ee;
       --ok: #22c55e;
-      --warn: #f59e0b;
       --border: #2a3358;
     }
     * { box-sizing: border-box; }
@@ -22,101 +20,240 @@
       background: linear-gradient(180deg, #070b16 0%, #0b1020 100%);
       color: var(--text);
     }
-    .wrap { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    .wrap { max-width: 1200px; margin: 0 auto; padding: 24px; }
     h1 { margin: 0 0 8px; font-size: 28px; }
+    h2 { margin: 22px 0 10px; font-size: 20px; }
     .sub { color: var(--muted); margin-bottom: 20px; }
-    .top {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 12px;
-      margin-bottom: 18px;
-    }
-    .kpi, .card {
-      background: rgba(20,27,52,0.95);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 14px;
-    }
-    .kpi .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+    .top { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 18px; }
+    .kpi, .card, .kanban-col { background: rgba(20,27,52,0.95); border: 1px solid var(--border); border-radius: 14px; padding: 14px; }
+    .kpi .label, .row .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
     .kpi .value { font-size: 20px; margin-top: 6px; font-weight: 700; }
     .ok { color: var(--ok); }
-    .agents {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 12px;
-    }
+    .agents { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
     .agent-name { font-size: 18px; margin: 0 0 4px; }
-    .badge {
-      display: inline-block;
-      border: 1px solid #28523a;
-      color: #86efac;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 12px;
-      margin-bottom: 10px;
-    }
+    .badge { display: inline-block; border: 1px solid #28523a; color: #86efac; padding: 2px 8px; border-radius: 999px; font-size: 12px; margin-bottom: 10px; }
     .row { margin: 8px 0; }
-    .row .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .07em; }
     .row .value { margin-top: 3px; line-height: 1.35; }
     ul { margin: 8px 0 0 18px; padding: 0; }
     li { margin: 4px 0; }
     .footer { margin-top: 16px; color: var(--muted); font-size: 12px; }
-    .btn {
-      background: #0e7490;
-      color: white;
-      border: 0;
-      border-radius: 10px;
-      padding: 8px 12px;
-      cursor: pointer;
-      margin-left: 10px;
-    }
+    .btn { background: #0e7490; color: white; border: 0; border-radius: 10px; padding: 8px 12px; cursor: pointer; margin-left: 10px; }
+
+    .kanban { display: grid; grid-template-columns: repeat(4, minmax(220px, 1fr)); gap: 12px; align-items: start; }
+    .kanban-col h3 { margin: 0 0 10px; font-size: 14px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+    .dropzone { min-height: 90px; border: 1px dashed #33406e; border-radius: 10px; padding: 8px; transition: .12s ease; }
+    .dropzone.drag-over { border-color: #22d3ee; background: rgba(34,211,238,.08); }
+    .task { border: 1px solid #33406e; border-radius: 10px; padding: 10px; margin-bottom: 8px; background: #101933; cursor: grab; }
+    .task:active { cursor: grabbing; }
+    .task-title { font-size: 14px; margin: 0 0 6px; }
+    .task-meta { font-size: 11px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; }
+    .pill { display: inline-block; border: 1px solid #475569; border-radius: 999px; padding: 1px 7px; font-size: 11px; }
+    .p-high { border-color: #7f1d1d; color: #fca5a5; }
+    .p-medium { border-color: #78350f; color: #fcd34d; }
+    .p-low { border-color: #1e3a8a; color: #93c5fd; }
+    .p-init { border-color: #065f46; color: #6ee7b7; }
+    .toast { position: fixed; right: 16px; bottom: 16px; background: #0f172a; border: 1px solid #334155; color: #e2e8f0; padding: 10px 12px; border-radius: 10px; font-size: 13px; opacity: 0; transform: translateY(8px); transition: .2s; }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    @media (max-width: 980px) { .kanban { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 640px) { .kanban { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>Cypher Matrix Dashboard</h1>
     <div class="sub">
-      Team visibility for The Architect, Morpheus, Trinity, Oracle, and Core.
-      <button class="btn" onclick="loadData()">Refresh</button>
+      Team visibility + draggable Kanban (move cards to start work).
+      <button class="btn" onclick="refreshAll()">Refresh</button>
+      <button class="btn" onclick="resetBoard()">Reset Board</button>
     </div>
 
     <div class="top" id="top"></div>
+
+    <h2>Agent Status</h2>
     <div class="agents" id="agents"></div>
+
+    <h2>Kanban Board</h2>
+    <div class="sub" id="kanbanMeta">Loading task board...</div>
+    <div class="kanban" id="kanban"></div>
+
     <div class="footer" id="footer"></div>
   </div>
+  <div id="toast" class="toast"></div>
 
   <script>
-    async function loadData() {
+    const KANBAN_COLUMNS = [
+      { id: 'todo', label: 'To Do' },
+      { id: 'in-progress', label: 'In Progress' },
+      { id: 'blocked', label: 'Blocked' },
+      { id: 'done', label: 'Done' }
+    ];
+
+    let baseKanban = null;
+    let boardState = null;
+
+    function esc(str = '') {
+      return String(str).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;');
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 1700);
+    }
+
+    function saveBoard() {
+      localStorage.setItem('cypher-kanban-state', JSON.stringify(boardState));
+    }
+
+    function loadSavedBoard() {
+      const raw = localStorage.getItem('cypher-kanban-state');
+      if (!raw) return null;
+      try { return JSON.parse(raw); } catch { return null; }
+    }
+
+    async function loadTeam() {
       const res = await fetch('./team-status.json?ts=' + Date.now());
       const data = await res.json();
 
-      const top = document.getElementById('top');
-      const agents = document.getElementById('agents');
-      const footer = document.getElementById('footer');
-
-      top.innerHTML = `
-        <div class="kpi"><div class="label">Overall Health</div><div class="value ok">${data.summary.overallHealth}</div></div>
-        <div class="kpi"><div class="label">Primary Channel</div><div class="value">${data.summary.primaryChannel}</div></div>
-        <div class="kpi"><div class="label">Gateway</div><div class="value">${data.summary.gateway}</div></div>
-        <div class="kpi"><div class="label">Active Agents</div><div class="value">${data.summary.activeAgents}</div></div>
+      document.getElementById('top').innerHTML = `
+        <div class="kpi"><div class="label">Overall Health</div><div class="value ok">${esc(data.summary.overallHealth)}</div></div>
+        <div class="kpi"><div class="label">Primary Channel</div><div class="value">${esc(data.summary.primaryChannel)}</div></div>
+        <div class="kpi"><div class="label">Gateway</div><div class="value">${esc(data.summary.gateway)}</div></div>
+        <div class="kpi"><div class="label">Active Agents</div><div class="value">${esc(data.summary.activeAgents)}</div></div>
       `;
 
-      agents.innerHTML = data.agents.map(a => `
+      document.getElementById('agents').innerHTML = data.agents.map(a => `
         <div class="card">
-          <h3 class="agent-name">${a.name}</h3>
-          <div class="badge">${a.status}</div>
-          <div class="row"><div class="label">Objective</div><div class="value">${a.objective}</div></div>
-          <div class="row"><div class="label">Current Focus</div><div class="value">${a.focus}</div></div>
-          <div class="row"><div class="label">Next Actions</div>
-            <ul>${a.nextActions.map(x => `<li>${x}</li>`).join('')}</ul>
+          <h3 class="agent-name">${esc(a.name)}</h3>
+          <div class="badge">${esc(a.status)}</div>
+          <div class="row"><div class="label">Objective</div><div class="value">${esc(a.objective)}</div></div>
+          <div class="row"><div class="label">Current Focus</div><div class="value">${esc(a.focus)}</div></div>
+          <div class="row"><div class="label">Next Actions</div><ul>${(a.nextActions||[]).map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>
+        </div>
+      `).join('');
+
+      document.getElementById('footer').textContent = `Generated: ${data.generatedAt}  •  Mission: ${data.teamMission}`;
+    }
+
+    function renderTask(task) {
+      const p = (task.priority || 'low').toLowerCase();
+      const priorityClass = p === 'high' ? 'p-high' : p === 'medium' ? 'p-medium' : 'p-low';
+      const init = task.initiatedAt ? `<span class="pill p-init">started ${new Date(task.initiatedAt).toLocaleTimeString()}</span>` : '';
+      return `
+        <div class="task" draggable="true" data-id="${esc(task.id)}">
+          <div class="task-title">${esc(task.title)}</div>
+          <div class="task-meta">
+            <span class="pill">${esc(task.id)}</span>
+            <span class="pill">${esc(task.agent)}</span>
+            <span class="pill ${priorityClass}">${esc(p)}</span>
+            ${init}
+          </div>
+        </div>
+      `;
+    }
+
+    function moveTask(taskId, newStatus) {
+      const t = boardState.tasks.find(x => x.id === taskId);
+      if (!t) return;
+      const from = t.status;
+      t.status = newStatus;
+      if (newStatus === 'in-progress' && !t.initiatedAt) {
+        t.initiatedAt = new Date().toISOString();
+        t.initiated = true;
+        showToast(`Initiated: ${t.id} (${t.agent})`);
+      } else {
+        showToast(`Moved ${t.id}: ${from} → ${newStatus}`);
+      }
+      boardState.updatedAt = new Date().toISOString();
+      saveBoard();
+      drawKanban();
+    }
+
+    function wireDnD() {
+      document.querySelectorAll('.task').forEach(el => {
+        el.addEventListener('dragstart', (e) => {
+          e.dataTransfer.setData('text/plain', el.dataset.id);
+        });
+      });
+
+      document.querySelectorAll('.dropzone').forEach(zone => {
+        zone.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          zone.classList.add('drag-over');
+        });
+        zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+        zone.addEventListener('drop', (e) => {
+          e.preventDefault();
+          zone.classList.remove('drag-over');
+          const taskId = e.dataTransfer.getData('text/plain');
+          moveTask(taskId, zone.dataset.status);
+        });
+      });
+    }
+
+    function drawKanban() {
+      const grouped = { 'todo': [], 'in-progress': [], 'blocked': [], 'done': [] };
+      for (const t of (boardState.tasks || [])) if (grouped[t.status]) grouped[t.status].push(t);
+
+      document.getElementById('kanban').innerHTML = KANBAN_COLUMNS.map(col => `
+        <div class="kanban-col">
+          <h3>${col.label} (${grouped[col.id].length})</h3>
+          <div class="dropzone" data-status="${col.id}">
+            ${grouped[col.id].map(renderTask).join('') || '<div class="task"><div class="task-title">No tasks</div></div>'}
           </div>
         </div>
       `).join('');
 
-      footer.textContent = `Generated: ${data.generatedAt}  •  Mission: ${data.teamMission}`;
+      document.getElementById('kanbanMeta').textContent = `Drag cards between columns. Dropping into In Progress auto-initiates the task. Last update: ${boardState.updatedAt}`;
+      wireDnD();
     }
 
-    loadData();
+    function mergeBoardWithBase(saved, base) {
+      if (!saved || !Array.isArray(saved.tasks)) return structuredClone(base);
+
+      const savedById = new Map(saved.tasks.map(t => [t.id, t]));
+      const mergedTasks = (base.tasks || []).map(task => {
+        const prev = savedById.get(task.id);
+        if (!prev) return structuredClone(task);
+        return {
+          ...task,
+          status: prev.status || task.status,
+          initiatedAt: prev.initiatedAt || task.initiatedAt,
+          initiated: prev.initiated || task.initiated
+        };
+      });
+
+      return {
+        ...structuredClone(base),
+        tasks: mergedTasks,
+        updatedAt: saved.updatedAt || base.updatedAt
+      };
+    }
+
+    async function loadKanban() {
+      const res = await fetch('./kanban-tasks.json?ts=' + Date.now());
+      baseKanban = await res.json();
+      const saved = loadSavedBoard();
+      boardState = mergeBoardWithBase(saved, baseKanban);
+      saveBoard();
+      drawKanban();
+    }
+
+    function resetBoard() {
+      if (!baseKanban) return;
+      boardState = structuredClone(baseKanban);
+      saveBoard();
+      drawKanban();
+      showToast('Board reset to file defaults');
+    }
+
+    async function refreshAll() {
+      await Promise.all([loadTeam(), loadKanban()]);
+    }
+
+    refreshAll();
   </script>
 </body>
 </html>
