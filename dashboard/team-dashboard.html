@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cypher Matrix Team Dashboard</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --card: #141b34;
+      --muted: #94a3b8;
+      --text: #e2e8f0;
+      --accent: #22d3ee;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --border: #2a3358;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: linear-gradient(180deg, #070b16 0%, #0b1020 100%);
+      color: var(--text);
+    }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    h1 { margin: 0 0 8px; font-size: 28px; }
+    .sub { color: var(--muted); margin-bottom: 20px; }
+    .top {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 18px;
+    }
+    .kpi, .card {
+      background: rgba(20,27,52,0.95);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 14px;
+    }
+    .kpi .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; }
+    .kpi .value { font-size: 20px; margin-top: 6px; font-weight: 700; }
+    .ok { color: var(--ok); }
+    .agents {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 12px;
+    }
+    .agent-name { font-size: 18px; margin: 0 0 4px; }
+    .badge {
+      display: inline-block;
+      border: 1px solid #28523a;
+      color: #86efac;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      margin-bottom: 10px;
+    }
+    .row { margin: 8px 0; }
+    .row .label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .07em; }
+    .row .value { margin-top: 3px; line-height: 1.35; }
+    ul { margin: 8px 0 0 18px; padding: 0; }
+    li { margin: 4px 0; }
+    .footer { margin-top: 16px; color: var(--muted); font-size: 12px; }
+    .btn {
+      background: #0e7490;
+      color: white;
+      border: 0;
+      border-radius: 10px;
+      padding: 8px 12px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Cypher Matrix Dashboard</h1>
+    <div class="sub">
+      Team visibility for The Architect, Morpheus, Trinity, Oracle, and Core.
+      <button class="btn" onclick="loadData()">Refresh</button>
+    </div>
+
+    <div class="top" id="top"></div>
+    <div class="agents" id="agents"></div>
+    <div class="footer" id="footer"></div>
+  </div>
+
+  <script>
+    async function loadData() {
+      const res = await fetch('./team-status.json?ts=' + Date.now());
+      const data = await res.json();
+
+      const top = document.getElementById('top');
+      const agents = document.getElementById('agents');
+      const footer = document.getElementById('footer');
+
+      top.innerHTML = `
+        <div class="kpi"><div class="label">Overall Health</div><div class="value ok">${data.summary.overallHealth}</div></div>
+        <div class="kpi"><div class="label">Primary Channel</div><div class="value">${data.summary.primaryChannel}</div></div>
+        <div class="kpi"><div class="label">Gateway</div><div class="value">${data.summary.gateway}</div></div>
+        <div class="kpi"><div class="label">Active Agents</div><div class="value">${data.summary.activeAgents}</div></div>
+      `;
+
+      agents.innerHTML = data.agents.map(a => `
+        <div class="card">
+          <h3 class="agent-name">${a.name}</h3>
+          <div class="badge">${a.status}</div>
+          <div class="row"><div class="label">Objective</div><div class="value">${a.objective}</div></div>
+          <div class="row"><div class="label">Current Focus</div><div class="value">${a.focus}</div></div>
+          <div class="row"><div class="label">Next Actions</div>
+            <ul>${a.nextActions.map(x => `<li>${x}</li>`).join('')}</ul>
+          </div>
+        </div>
+      `).join('');
+
+      footer.textContent = `Generated: ${data.generatedAt}  •  Mission: ${data.teamMission}`;
+    }
+
+    loadData();
+  </script>
+</body>
+</html>

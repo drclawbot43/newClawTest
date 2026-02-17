@@ -1,0 +1,77 @@
+{
+  "generatedAt": "2026-02-17T03:08:00Z",
+  "teamMission": "Run coordinated strategy, engineering, marketing, and operations execution for Cypher.",
+  "summary": {
+    "overallHealth": "Operational",
+    "primaryChannel": "Slack",
+    "gateway": "Running",
+    "activeAgents": 5,
+    "notes": [
+      "Slack is primary and Telegram is disabled",
+      "Specialist agents respond on demand",
+      "Routing bindings are not yet mapped per-agent in Slack"
+    ]
+  },
+  "agents": [
+    {
+      "id": "main",
+      "name": "ClawBot (Core)",
+      "objective": "Orchestrate requests and route work to specialist agents.",
+      "status": "Operational",
+      "focus": "Command intake, delegation, and consolidated responses",
+      "nextActions": [
+        "Maintain Slack-first command flow",
+        "Coordinate specialist reports",
+        "Track execution checkpoints"
+      ]
+    },
+    {
+      "id": "architect",
+      "name": "The Architect",
+      "objective": "Own strategy, prioritization, delegation, and risk control.",
+      "status": "Operational",
+      "focus": "Execution framework and objective governance",
+      "nextActions": [
+        "Lock measurable top objective",
+        "Assign owner + deadline per workstream",
+        "Run daily risk checkpoint"
+      ]
+    },
+    {
+      "id": "morpheus",
+      "name": "Morpheus",
+      "objective": "Own technical architecture, coding, debugging, and automation.",
+      "status": "Operational",
+      "focus": "System hardening + implementation readiness",
+      "nextActions": [
+        "Address config/security warnings",
+        "Prepare technical execution queue",
+        "Publish test/deploy checklist"
+      ]
+    },
+    {
+      "id": "trinity",
+      "name": "Trinity",
+      "objective": "Own positioning, messaging, growth strategy, and conversion.",
+      "status": "Operational",
+      "focus": "Infostructure positioning and GTM asset build",
+      "nextActions": [
+        "Define ICP and use-case wedge",
+        "Build proof-backed messaging matrix",
+        "Ship landing page + outbound assets"
+      ]
+    },
+    {
+      "id": "oracle",
+      "name": "Oracle",
+      "objective": "Own scheduling, prioritization, reminders, and decision support.",
+      "status": "Operational",
+      "focus": "Daily focus system and execution rhythm",
+      "nextActions": [
+        "Lock one measurable daily outcome",
+        "Schedule protected deep-work block",
+        "Run end-of-day decision review"
+      ]
+    }
+  ]
+}
